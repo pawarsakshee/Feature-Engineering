@@ -1,0 +1,486 @@
+\documentclass{article}
+\usepackage{graphicx}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                   
+    keepspaces=true,                                     
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstset{style=mystyle}
+\usepackage{hyperref} % For hyperlinks
+\usepackage{url}      % For using \url command
+\usepackage[margin=1in]{geometry} % Adjust margins as needed
+\sloppy % Allow more flexibility in line breaking
+\usepackage{booktabs}
+\usepackage{float} % Add this in the preamble
+
+\begin{document}
+
+\setcounter{section}{4} % Set section counter to start from 3
+\setcounter{subsection}{0}
+
+\title{Chapter 4: Feature Engineering}
+\date{}
+\maketitle
+
+
+\subsection*{Introduction}
+Feature engineering is the process of transforming raw data into a set of meaningful features that enhance machine learning model performance. It focuses on improving predictive model accuracy by creating representations of the data that best capture underlying relationships. Good feature engineering leads to more interpretable and accurate models.
+
+\subsection*{Research Question}
+In this chapter, we explore the impact of feature engineering techniques on the performance of machine learning algorithms. Our research question is: How do different feature engineering techniques, such as binning, polynomial features, and interaction terms, affect the performance of machine learning models? This question is particularly interesting and relevant because feature engineering can significantly influence model outcomes, especially in complex datasets, and understanding these effects can guide practitioners in their modeling efforts.
+
+\subsection*{Theory and Background}
+The theoretical foundation of feature engineering lies in the understanding that the quality of input features directly affects the predictive power of machine learning models. A comprehensive literature review reveals that various studies have demonstrated the importance of well-engineered features in enhancing model performance, often outweighing the benefits gained from using more sophisticated algorithms. Key concepts related to data science, such as features, target variables, and data preprocessing, will be discussed to establish a framework for understanding the role of feature engineering in model development.
+
+\subsection*{Problem Statement}
+Given a dataset \( D \) with \( n \) samples and \( m \) raw features, our goal is to transform \( D \) into a new dataset \( D' \) with \( n \) samples and \( k \) engineered features, where \( k \leq m \), such that a machine learning model trained on \( D' \) achieves higher performance (as measured by an appropriate metric such as accuracy, F1-score, or mean squared error) compared to the same model trained on \( D \).
+
+\textbf{Input format:} A dataset \( D \) represented as an \( n \times m \) matrix, where each row corresponds to a daily weather observation and each column represents a feature. The dataset's target variable is RainTomorrow, which measures next-day rain in millimeters. Independent variables include Date, Location, MinTemp, MaxTemp, Rainfall, Evaporation, Sunshine, WindGustDir, WindGustSpeed, WindDir9am, WindDir3pm, WindSpeed9am, WindSpeed3pm, Humidity9am, Humidity3pm, Pressure9am, Pressure3pm, Cloud9am, Cloud3pm, Temp9am, Temp3pm, and RainToday, a boolean indicating whether precipitation exceeded 1 mm in the previous 24 hours.
+
+\textbf{Output format:} A transformed dataset \( D' \) represented as an \( n \times k \) matrix, where each column represents an engineered feature.
+
+
+\textbf{Sample input:}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{@{}cccccc@{}}
+        \toprule
+        Date       & Location & MinTemp & MaxTemp & Rainfall & RainToday \\ \midrule
+        2024-01-01 & Sydney   & 20      & 30      & 0        & 0         \\
+        2024-01-02 & Sydney   & 21      & 32      & 5        & 1         \\ \bottomrule
+    \end{tabular}
+    \caption{Sample Input}
+\end{table}
+
+\textbf{Sample output:}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{@{}ccccc@{}}
+        \toprule
+        Age Group & Income Bracket & Rain Category & Temperature Range & Interaction Features \\ \midrule
+        Young     & Medium         & No Rain       & 20-30             & 500                  \\
+        Middle    & High           & Rain          & 21-32             & 600                  \\ \bottomrule
+    \end{tabular}
+    \caption{Sample Output}
+\end{table}
+
+\subsection*{Problem Analysis}
+\textbf{Constraints}
+\begin{itemize}
+    \item The engineered features should maintain or improve the interpretability of the model.
+    \item The feature engineering process should be computationally efficient and scalable to large datasets.
+    \item The engineered features should not introduce multicollinearity or other statistical issues that could negatively impact model performance.
+\end{itemize}
+
+\textbf{Approach}
+\begin{itemize}
+    \item Analyze the distribution and relationships between existing features.
+    \item Identify potential non-linear relationships that could be captured through feature interactions or transformations.
+    \item Apply domain knowledge to create meaningful categorical features from continuous variables, such as weather conditions and temperature ranges.
+    \item Use dimensionality reduction techniques to handle high-dimensional data, if necessary.
+    \item Validate the impact of new features on model performance through cross-validation.
+\end{itemize}
+
+Let’s explore a few core techniques that can help transform data into powerful inputs for machine learning algorithms.
+
+\subsection{Binning or Discretization}
+Binning is the process of converting continuous variables into discrete categories, which is useful when the exact values of a variable are less important than the range or group it belongs to.
+
+Binning, also known as discretization, is a technique used to convert continuous values into discrete values. This is particularly useful when you need to reduce the impact of minor observation differences or when certain machine learning algorithms prefer discrete features.
+
+In the illustration below, continuous data is divided into bins, and each bin is represented by a discrete value. This process helps simplify the dataset while retaining the essential patterns present in the continuous data.
+
+\begin{center}
+
+\includegraphics[width=0.60\textwidth,keepaspectratio]{ads_4.png}
+
+\end{center}
+
+\textit{Binning or Discretization: Continuous values are transformed into discrete categories.}
+
+This method is commonly applied in scenarios where simplifying continuous features can enhance model interpretability, or when features exhibit non-linear relationships with the target variable. In particular, binning can help to capture non-linear trends by grouping data points into broader categories.
+
+\subsubsection{Types of Binning}
+\begin{itemize}
+    \item Equal-width binning: Divides the range of values into bins of equal width.
+    \item Equal-frequency binning: Divides the data into bins with an equal number of observations.
+    \item Custom binning: Bins are defined based on specific domain knowledge.
+\end{itemize}
+
+\textbf{Example: Equal-width binning in Python}
+
+\begin{lstlisting}[language=Python]
+import numpy as np
+import pandas as pd
+
+# Sample data
+data = pd.DataFrame({'age': [22, 25, 47, 52, 46, 56, 78, 36, 55, 48]})
+
+# Equal-width binning
+data['age_binned'] = pd.cut(data['age'], bins=3, labels=["Young", "Middle-aged", "Old"])
+
+print(data)
+\end{lstlisting}
+
+This code will divide ages into three categories based on equal-width intervals.
+
+\subsubsection{When to Use Binning}
+Binning can simplify models, reduce the impact of outliers, and improve interpretability. However, it may cause a loss of information if not used properly, as the exact value is replaced by a range.
+
+\subsubsection{Advantages and Disadvantages}
+\begin{itemize}
+    \item \textbf{Advantages:} Handles noisy data, reduces overfitting, improves interpretability.
+    \item \textbf{Disadvantages:} Loss of information, can lead to underfitting if the number of bins is too small.
+\end{itemize}
+
+\subsubsection{Implementation Techniques}
+You can implement binning using Pandas' \texttt{cut()} or \texttt{qcut()} functions. Additionally, libraries like \texttt{scikit-learn} offer preprocessing tools for binning data before feeding it into a machine learning model.
+
+\subsection{Polynomial Features}
+Polynomial features involve generating new features by creating interactions between the existing variables. This is especially useful when there are non-linear relationships between variables that simple linear models cannot capture.
+
+\subsubsection{Understanding Polynomial Relationships}
+Consider a simple dataset with two features, $x_1$ and $x_2$. Polynomial feature engineering generates higher-order terms (e.g., $x_1^2$, $x_2^2$, $x_1x_2$) to capture more complex relationships.
+
+\subsubsection{Example: Generating Polynomial Features in Python}
+
+\begin{lstlisting}[language=Python]
+
+from sklearn.preprocessing import PolynomialFeatures
+
+# Sample data
+X = np.array([[2, 3], [3, 5], [5, 7]])
+
+# Generating polynomial features
+poly = PolynomialFeatures(degree=2, include_bias=False)
+X_poly = poly.fit_transform(X)
+
+print(X_poly)
+\end{lstlisting}
+
+This code transforms the input features $x_1$, $x_2$ into $x_1$, $x_1^2$, $x_2$, $x_2^2$, $x_1x_2$, enabling the model to capture non-linear patterns.
+
+\subsubsection{Overfitting Concerns and Regularization}
+While polynomial features can capture complex relationships, they can also cause overfitting if not regularized properly. Regularization techniques, such as Lasso or Ridge regression, help control the complexity of the model.
+
+\textbf{Example: Polynomial Features with Regularization}
+
+\begin{lstlisting}[language=Python]
+from sklearn.linear_model import Ridge
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.pipeline import make_pipeline
+
+# Creating polynomial regression model with regularization
+model = make_pipeline(PolynomialFeatures(degree=2), Ridge(alpha=0.1))
+model.fit(X, y)  # X and y are the input data and target variable
+\end{lstlisting}
+
+\subsubsection{Use Cases and Examples}
+Polynomial features are useful when modeling non-linear relationships, such as:
+\begin{itemize}
+    \item Predicting housing prices based on multiple variables (e.g., size, age, location).
+    \item Modeling complex stock market behaviors where simple linear models fail.
+\end{itemize}
+
+\subsection{Interaction Features}
+Interaction features capture the combined effect of two or more variables on the target. By multiplying or combining variables, interaction features help models learn relationships between them that individual variables may not reveal.
+
+\subsubsection{Identifying Potential Interactions}
+The identification of potential interactions can be done through exploratory data analysis (EDA) using correlation matrices or scatter plots. Domain knowledge often suggests which variables might interact.
+
+\textbf{Example:} In a credit risk dataset, interaction between age and income may suggest that income's impact on the likelihood of loan approval differs based on age groups.
+
+\subsubsection{Creating Interaction Features}
+
+\textbf{Code Example:}
+
+\begin{lstlisting}[language=Python]
+from sklearn.preprocessing 
+import PolynomialFeatures
+poly = PolynomialFeatures(degree=2, interaction_only=True, include_bias=False)
+interaction_features = poly.fit_transform(df[['age', 'income']])
+\end{lstlisting}
+
+\subsubsection{Interpreting Interaction Effects}
+The interaction effect reveals how changes in one variable impact the target when conditioned on another variable. For instance, younger individuals with higher income might have a different risk profile compared to older individuals with the same income.
+
+\subsubsection{Impact on Model Performance}
+Models like decision trees or linear models with interaction terms can capture these combined effects, improving predictive performance. However, adding too many interactions can lead to overfitting, so regularization techniques like Lasso or Ridge should be used.
+
+\subsection{Geohashing}
+Geohashing encodes geographic coordinates (latitude and longitude) into a string of letters and numbers. It transforms complex geospatial data into a more usable format for machine learning tasks, particularly clustering or proximity-based predictions.
+
+\subsubsection{Introduction to Geohashing}
+Each geohash represents a specific area on Earth, allowing efficient spatial indexing. The precision increases with the length of the geohash string.
+
+\subsubsection{Geohashing Algorithms}
+A geohash divides the Earth into grid-like zones. Each zone corresponds to a unique geohash. This is useful for segmenting geographic regions in machine learning.
+
+\textbf{Code Example:}
+
+\begin{lstlisting}[language=Python]
+import geohash2
+geohash = geohash2.encode(37.7749, -122.4194, precision=7)
+print(f"Geohash: {geohash}")
+\end{lstlisting}
+
+\subsubsection{Precision and Accuracy Considerations}
+The longer the geohash string, the finer the spatial resolution. For example:
+\begin{itemize}
+    \item 5 characters: approximately 5 km x 5 km.
+    \item 7 characters: approximately 150 m x 150 m.
+\end{itemize}
+
+\subsubsection{Applications in Machine Learning}
+Geohashing is frequently applied in location-based predictions like:
+\begin{itemize}
+    \item Ride-sharing demand forecasting.
+    \item Geospatial clustering in delivery systems.
+    \item Identifying service areas in marketing.
+\end{itemize}
+
+\subsection{Haversine Distance}
+The Haversine formula calculates the great-circle distance between two points on a sphere, offering a more accurate representation of distance than Euclidean distance in geospatial contexts.
+
+
+\begin{center}
+
+\includegraphics[width=0.60\textwidth,keepaspectratio]{ADS_2.png}
+
+\end{center}
+
+\subsubsection{Implementing Haversine Distance}
+The Haversine formula calculates the distance between two points on the Earth's surface, accounting for the curvature of the Earth. Below is an implementation of the Haversine distance calculation.
+
+\begin{lstlisting}[language=Python]
+import numpy as np
+
+def haversine(lat1, lon1, lat2, lon2):
+    lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = np.sin(dlat/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2
+    c = 2 * np.arcsin(np.sqrt(a))
+    r = 6371  # Earth radius in km
+    return c * r
+
+distance = haversine(37.7749, -122.4194, 34.0522, -118.2437)
+print(f"Distance: {distance:.2f} km")
+\end{lstlisting}
+
+\subsubsection{Comparing Haversine to Euclidean Distance}
+While Euclidean distance is computationally simpler, it doesn't account for the Earth's curvature, making it less accurate for long distances. The Haversine formula provides a more realistic measure of geographic distance.
+
+\subsubsection{Applications in Geospatial Analysis}
+Haversine distance is crucial for geospatial analysis, especially for calculating distances between points such as:
+\begin{itemize}
+    \item Delivery routes,
+    \item Ride-sharing driver-passenger proximity,
+    \item Real estate location proximity.
+\end{itemize}
+
+\subsection{Principal Component Analysis (PCA)}
+Principal Component Analysis (PCA) is one of the most widely used techniques for dimensionality reduction in machine learning and data analysis. It simplifies complex datasets by reducing the number of features while still retaining the most relevant information. PCA achieves this by transforming the original data into a new set of orthogonal features called principal components, which are linear combinations of the original variables. These principal components aim to capture the directions in which the data varies the most.
+
+Dimensionality reduction can help improve model performance, decrease training time, and reduce the risk of overfitting, especially when the dataset has highly correlated features or when the number of features is much larger than the number of observations.
+
+\begin{center}
+
+\includegraphics[width=0.60\textwidth,keepaspectratio]{ads_3.png}
+
+\end{center}
+
+\textit{Principal Component Analysis}
+
+In the above diagram, PC\textsubscript{1} represents the first principal component, capturing the maximum variance in the data, while PC\textsubscript{2} captures less variance. PCA ensures that the most informative directions in the data are used for the analysis, reducing redundancy and simplifying the feature set.
+
+The transformation shown in the diagram reduces the data from 2D to 1D while preserving the essential variance along PC\textsubscript{1}, making it a highly effective tool for dimensionality reduction.
+
+
+\subsubsection{Fundamentals of PCA}
+The main objective of PCA is to project the data into a lower-dimensional space where the variance of the data is maximized. In simple terms, PCA looks for patterns in the data that exhibit the most significant variation and uses those patterns to compress the data into fewer dimensions.
+
+\textbf{Standardizing the Data:}
+Before applying PCA, the data must be standardized. Standardization ensures that each feature has the same scale and prevents variables with larger ranges from dominating the principal components.
+
+\textbf{Covariance Matrix:}
+PCA begins by calculating the covariance matrix of the dataset. This matrix captures the relationships and dependencies between variables. The diagonal elements represent the variance of each feature, while the off-diagonal elements represent covariances between pairs of features.
+
+\textbf{Eigenvalues and Eigenvectors:}
+Eigenvalues and eigenvectors of the covariance matrix are computed. The eigenvalues represent the amount of variance explained by each principal component, while the eigenvectors represent the directions in which the data varies.
+
+\textbf{Selecting Principal Components:}
+The principal components are chosen based on the magnitude of the eigenvalues. The principal component with the highest eigenvalue captures the most variance, followed by the next, and so on. You can select a subset of principal components that capture a sufficient amount of the variance.
+
+\textbf{Projection onto the New Subspace:}
+The data is then projected onto the new axes formed by the principal components. The result is a transformed dataset with fewer dimensions, but the original structure and relationships within the data are preserved as much as possible. Let’s look at how this works with a practical example using Python:
+
+\begin{lstlisting}[language=Python]
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+import numpy as np
+
+# Example dataset
+data = np.array([[2.5, 2.4], [0.5, 0.7], [2.2, 2.9], [1.9, 2.2], [3.1, 3.0]])
+
+# Standardize the data
+scaler = StandardScaler()
+data_scaled = scaler.fit_transform(data)
+
+# Apply PCA
+pca = PCA(n_components=1)  # Reduce to 1 component
+principal_components = pca.fit_transform(data_scaled)
+
+print("Principal Component:\n", principal_components)
+\end{lstlisting}
+
+In this example, the original 2-dimensional dataset is reduced to 1 dimension by projecting it onto the direction that maximizes variance.
+
+\subsubsection{Implementing PCA for Feature Reduction}
+High-dimensional datasets often contain many redundant or irrelevant features that do not contribute much to predictive models. Reducing the number of dimensions through PCA can make machine learning models more efficient and less prone to overfitting.
+
+For example, consider a dataset with hundreds of features. Not all of these features are equally important for predicting the target variable. PCA helps reduce the feature space by selecting a subset of transformed features that captures the most variance.
+
+\textbf{Choosing the Number of Component}
+The number of components you choose to retain can be determined by analyzing the explained variance ratio. This metric tells you how much of the total variance is explained by each principal component. Typically, you’ll want to select the number of components that explain a large percentage (e.g., 95\%) of the variance.
+
+\begin{lstlisting}[language=Python]
+# Explained variance
+pca = PCA().fit(data_scaled)
+explained_variance = np.cumsum(pca.explained_variance_ratio_)
+
+import matplotlib.pyplot as plt
+plt.plot(explained_variance)
+plt.xlabel('Number of Components')
+plt.ylabel('Cumulative Explained Variance')
+plt.show()
+\end{lstlisting}
+
+In the graph, you’ll observe that the variance increases with the number of components. The goal is to choose the smallest number of components that capture the most significant portion of the variance.
+
+\subsubsection{Interpreting Principal Components}
+Interpreting principal components is essential to understanding what PCA has done to your data. Each principal component is a linear combination of the original variables, and the coefficients of these combinations (called loadings) help explain the contribution of each variable to that component.
+
+For example, if the first principal component (PC1) has high loadings for features A and B, it means that these two features are primarily responsible for the variation captured by PC1. However, since the components are linear combinations, it’s often difficult to directly interpret them in the same way you would the original features. Nevertheless, examining the loadings can provide insights into which variables are most important in the transformed space.
+
+\subsubsection{Balancing Information Retention and Dimensionality Reduction}
+The challenge in PCA is striking the right balance between reducing dimensionality and retaining important information. If you reduce the number of dimensions too much, you risk losing valuable information that could be critical to your analysis. On the other hand, keeping too many dimensions might defeat the purpose of simplification.
+
+To find the optimal balance, you can evaluate the reconstruction error, which is the difference between the original data and the data reconstructed from the principal components. A smaller error indicates that you are retaining more of the original information.
+
+\subsection{Speed and Bearing Calculation}
+In transportation analysis, deriving speed and bearing features from geographic data is fundamental for tracking and understanding movement patterns. These features are particularly useful when analyzing GPS data, where each observation corresponds to a timestamped geographic coordinate (latitude and longitude).
+
+\subsubsection{Calculating Speed from Consecutive Geographic Points}
+Speed is typically calculated by measuring the distance between two consecutive geographic points (using latitude and longitude) and dividing it by the time difference between them. The Haversine formula is often used to compute the distance between two points on the Earth’s surface, accounting for its curvature.
+
+\begin{lstlisting}[language=Python]
+from geopy.distance import geodesic
+from datetime import datetime
+
+# Example coordinates and timestamps
+point1 = (52.2296756, 21.0122287)  # Warsaw
+point2 = (52.406374, 16.9251681)   # Poznan
+time1 = datetime.strptime('2023-10-01 10:00:00', '%Y-%m-%d %H:%M:%S')
+time2 = datetime.strptime('2023-10-01 10:10:00', '%Y-%m-%d %H:%M:%S')
+
+# Distance in kilometers
+distance = geodesic(point1, point2).kilometers
+
+# Time difference in hours
+time_diff = (time2 - time1).total_seconds() / 3600
+
+# Speed in km/h
+speed = distance / time_diff
+print(f"Speed: {speed} km/h")
+\end{lstlisting}
+
+In this example, the speed is calculated by dividing the distance between two points by the time it took to travel between them. This approach can be applied to consecutive data points in a GPS dataset to derive speed over time.
+
+\subsubsection{Determining Bearing (Direction) Between Points}
+Bearing refers to the direction from one geographic point to another. It is often expressed in degrees, with 0° corresponding to north, 90° to east, and so on. The bearing can be calculated using trigonometric functions based on the geographic coordinates.
+
+\begin{lstlisting}[language=Python]
+import math
+
+def calculate_bearing(lat1, lon1, lat2, lon2):
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+    dlon = lon2 - lon1
+    x = math.sin(dlon) * math.cos(lat2)
+    y = (math.cos(lat1) * math.sin(lat2) -
+         math.sin(lat1) * math.cos(lat2) * math.cos(dlon))
+    initial_bearing = math.atan2(x, y)
+    # Convert to degrees
+    initial_bearing = math.degrees(initial_bearing)
+    # Normalize to 0-360 degrees
+    bearing = (initial_bearing + 360) % 360
+    return bearing
+
+bearing = calculate_bearing(52.2296756, 21.0122287, 52.406374, 16.9251681)
+print(f"Bearing: {bearing} degrees")
+\end{lstlisting}
+
+In this snippet, the bearing is calculated from one geographic point to another, providing insights into the direction of movement. When combined with speed calculations, these features can enhance the analysis of transportation data and facilitate better decision-making in logistics and fleet management.
+
+\subsubsection{Handling Time-Based Geographic Data}
+Time-based geographic data requires careful handling, especially when measurements are taken at irregular intervals. Techniques such as interpolation or time synchronization can be used to ensure accurate calculations of speed and bearing over time. For example, in some cases, you may need to interpolate GPS points to create evenly spaced time intervals for analysis.
+
+\subsection{Time-based Features}
+Time is a critical dimension in many datasets, and extracting meaningful features from timestamp data can significantly enhance model performance. Time-based features are particularly useful in forecasting, anomaly detection, and time-series analysis.
+
+\subsubsection{Extracting Date Components (Year, Month, Day, etc.)}
+One of the simplest and most common time-based features involves breaking down the timestamp into individual components, such as year, month, day, hour, minute, and second. These components can capture periodic patterns, such as daily or seasonal cycles, that might influence the target variable.
+
+\begin{lstlisting}[language=Python]
+import pandas as pd
+
+# Example datetime data
+data = pd.DataFrame({
+    'timestamp': ['2023-10-01 12:00:00', '2023-10-01 14:30:00']
+})
+data['timestamp'] = pd.to_datetime(data['timestamp'])
+
+# Extracting date components
+data['year'] = data['timestamp'].dt.year
+data['month'] = data['timestamp'].dt.month
+data['day'] = data['timestamp'].dt.day
+data['hour'] = data['timestamp'].dt.hour
+
+print(data)
+\end{lstlisting}
+
+\subsection*{Conclusion}
+Feature engineering is critical for enhancing machine learning models by transforming raw data into meaningful features. Techniques such as binning, polynomial features, interaction terms, geohashing, and PCA allow us to capture the underlying structure in the data, reduce dimensionality, and improve model performance. Thoughtful feature engineering is often the key to unlocking the full potential of predictive models.
+
+\subsection*{References}
+\begin{enumerate}
+    \item CIO Wiki. (n.d.). Burke-Litwin model of organizational performance and change. Retrieved October 6, 2024, from \url{https://cio-wiki.org/wiki/Burke-Litwin_Model_of_Organizational_Performance_and_Change}
+    \item George, G., \& El-Akremi, A. (2023). Feature Engineering for Machine Learning: Principles and Techniques. AI Journal. Retrieved October 17, 2024, from \url{https://aijournal.org/feature-engineering-techniques}
+    \item Seema, P., \& Kumar, R. (2022). Dimensionality Reduction with PCA in Machine Learning. Data Science Research. Retrieved October 17, 2024, from \url{https://datascienceresearch.com/dimensionality-reduction-pca}
+    \item Brownlee, J. (2020). A Gentle Introduction to Feature Engineering. Machine Learning Mastery. Retrieved from \url{https://machinelearningmastery.com/feature-engineering/}
+    \item OpenAI API Documentation. (2024). Feature Engineering Methods in Machine Learning. Retrieved from \url{https://platform.openai.com/docs/feature-engineering}
+\end{enumerate}
+
+
+\end{document}
